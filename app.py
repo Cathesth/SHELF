@@ -101,12 +101,16 @@ if steam_id_input and steam_api_key:
                 else:
                     df_raw["icon_url"] = ""
 
-                # AI Classification (Top 30 to save time/tokens)
-                top_games = df_raw.head(30)
-                game_names = top_games["name"].tolist() if "name" in top_games.columns else []
+                # AI Classification Logic with Dynamic Limit
+                if "ai_limit" not in st.session_state:
+                    st.session_state["ai_limit"] = 50  # Default initial limit
+
+                # Slice data based on current limit
+                games_to_classify = df_raw.head(st.session_state["ai_limit"])
+                game_names = games_to_classify["name"].tolist() if "name" in games_to_classify.columns else []
                 
                 if ai and game_names:
-                    with st.spinner("🤖 AI is analyzing your library genres..."):
+                    with st.spinner(f"🤖 AI is analyzing top {len(game_names)} games..."):
                         try:
                             classification_res = ai.classify_games(game_names)
                             classified_list = classification_res.get("games", [])
@@ -148,17 +152,44 @@ if steam_id_input and steam_api_key:
         most_played = df.iloc[0]['name'] if not df.empty else "N/A"
         c3.metric("Most Played", most_played)
         
-        # 2. Charts
+        # 2. Charts (Improved)
         if "Genre" in df.columns and not df.empty:
+            st.subheader("Your Genre Preference")
+            
+            # Filter valid genres
             df_chart = df[df["Genre"] != "Unknown"]
+            df_chart = df_chart[df_chart["Genre"] != "Unclassified"]
+            
             if not df_chart.empty:
-                fig = px.pie(df_chart, names="Genre", title="Your Genre Preference (Top 30)", hole=0.4)
+                # Group small percentages into "Others"
+                genre_counts = df_chart["Genre"].value_counts(normalize=True)
+                threshold = 0.03  # 3%
+                mask = genre_counts < threshold
+                others_genres = genre_counts[mask].index.tolist()
+                
+                df_chart["Genre_Visual"] = df_chart["Genre"].apply(lambda x: "Others" if x in others_genres else x)
+                
+                fig = px.pie(
+                    df_chart, 
+                    names="Genre_Visual", 
+                    title=f"Genre Distribution (Top {st.session_state['ai_limit']} Games)", 
+                    hole=0.4
+                )
+                fig.update_traces(textposition='outside', textinfo='percent+label')
+                fig.update_layout(showlegend=False)
                 st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Not enough data classified yet.")
         
-        # 3. Game Table
+        # 3. Game Table with Load More
         st.subheader("📚 Game Collection")
+        
+        # Display current showing count
+        current_limit = st.session_state["ai_limit"]
+        st.caption(f"Showing Top {current_limit} games based on playtime.")
+        
         st.dataframe(
-            df[["name", "playtime_hours", "Genre", "Style", "Vibe"]],
+            df.head(current_limit)[["name", "playtime_hours", "Genre", "Style", "Vibe"]],
             column_config={
                 "name": "Game",
                 "playtime_hours": st.column_config.NumberColumn("Hours", format="%.1f h"),
@@ -168,8 +199,23 @@ if steam_id_input and steam_api_key:
             },
             hide_index=True,
             use_container_width=True,
-            height=300
+            height=400
         )
+        
+        # Load More Button
+        col_btn1, col_btn2 = st.columns([1, 4])
+        with col_btn1:
+            if current_limit < 100:
+                if st.button("Analyze Top 100 Games"):
+                    st.session_state["ai_limit"] = 100
+                    # Clear data to trigger re-fetch/re-analysis
+                    del st.session_state["games_data"]
+                    st.rerun()
+            elif current_limit < len(df):
+                 if st.button("Analyze All Games (Might appear slow)"):
+                    st.session_state["ai_limit"] = len(df)
+                    del st.session_state["games_data"]
+                    st.rerun()
         
         # 4. AI Recommendation Chat
         st.divider()
