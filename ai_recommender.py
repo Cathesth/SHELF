@@ -80,13 +80,15 @@ class AIRecommender:
             print(f"Error classifying games: {e}")
             return {"games": []}
 
-    def get_recommendation(self, user_query: str, library_context: str):
+    def get_recommendation(self, user_query: str, library_context: str, language: str = "ko"):
         """
         Generates a recommendation based on user query and library context.
         """
+        lang_instruction = "Answer in Korean." if language == "ko" else "Answer in English."
+        
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are a helpful Steam library assistant. You have access to the user's game library stats and classifications."),
-            ("system", "Context about user's library: {library_context}"),
+            ("system", f"Context about user's library: {{library_context}}\n\nIMPORTANT: {lang_instruction}"),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{question}")
         ])
