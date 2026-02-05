@@ -14,30 +14,64 @@ st.set_page_config(page_title="Steam Library Manager", page_icon="🎮", layout=
 
 # Language & Theme Logic
 if "language" not in st.session_state:
-    st.session_state["language"] = "ko"  # Default Korean
+    st.session_state["language"] = "ko"
+if "theme" not in st.session_state:
+    st.session_state["theme"] = "dark"
+
+# Helper for getting text
+def get_text(key_dict):
+    return key_dict.get(st.session_state["language"], key_dict["ko"])
 
 # Sidebar: Language & Theme Toggle
-# We use simple toggles with emojis to emulate requested UI function
 st.sidebar.title(t.CONFIG_TITLE[st.session_state["language"]])
 
 col_lang, col_theme = st.sidebar.columns(2)
 with col_lang:
-    # Toggle for Language: False=KO, True=EN
-    is_english = st.toggle("🇺🇸 English", value=(st.session_state["language"] == "en"))
+    # Dynamic Label Logic
+    lang_label = "🇺🇸 English" if st.session_state["language"] == "en" else "🇰🇷 한국어"
+    is_english = st.toggle(lang_label, value=(st.session_state["language"] == "en"))
+    
     new_lang = "en" if is_english else "ko"
     if new_lang != st.session_state["language"]:
         st.session_state["language"] = new_lang
         st.rerun()
 
 with col_theme:
-    # Visual-only toggle for theme (Streamlit limitation)
-    is_dark = st.toggle("🌙 Dark Mode", value=True)
-    # Ideally, we would switch theme config here, but it requires restart or hack.
-    # For now, we provide the UI as requested.
+    # Theme Toggle with Dynamic Label
+    theme_label = "🌙 Dark Mode" if st.session_state["theme"] == "dark" else "☀️ Light Mode"
+    is_dark = st.toggle(theme_label, value=(st.session_state["theme"] == "dark"))
+    
+    new_theme = "dark" if is_dark else "light"
+    if new_theme != st.session_state["theme"]:
+        st.session_state["theme"] = new_theme
+        st.rerun()
 
-# Helper for getting text
-def get_text(key_dict):
-    return key_dict.get(st.session_state["language"], key_dict["ko"])
+# Inject Custom CSS for Theme Switching
+# Streamlit doesn't support dynamic theme switching natively via Python, 
+# so we use CSS variables to override colors on the fly.
+if st.session_state["theme"] == "light":
+    st.markdown("""
+    <style>
+        /* Light Mode Overrides */
+        [data-testid="stAppViewContainer"] {
+            background-color: #ffffff;
+            color: #31333F;
+        }
+        [data-testid="stSidebar"] {
+            background-color: #f0f2f6;
+        }
+        [data-testid="stHeader"] {
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+        .stMarkdown, .stText, h1, h2, h3, h4, h5, h6, span, div, label {
+            color: #31333F !important;
+        }
+        /* Fix Metric Colors in Light Mode */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
+            color: #31333F !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Initialize AI Recommender (lazy load)
 @st.cache_resource
