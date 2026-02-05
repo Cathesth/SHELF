@@ -47,7 +47,7 @@ class AIRecommender:
         
         # If imports fail here, it's likely a packaging issue, but these are essential
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash-lite",
             temperature=0.3,
             convert_system_message_to_human=True,
             google_api_key=api_key
