@@ -183,28 +183,34 @@ if steam_id_input and steam_api_key:
             else:
                 st.info("Not enough data classified yet.")
         
-        # 3. Game Table with integrated Toolbar
-        # Layout: Title on Left, Buttons on Right
-        col_header, col_btn1, col_btn2 = st.columns([3, 1, 1])
+        # 3. Game Collection Toolbar
+        # Adjusted ratios to give buttons enough width to stay on one line
+        col_header, col_btn1, col_btn2 = st.columns([6, 1.5, 1.5], vertical_alignment="bottom")
         
         with col_header:
             st.subheader("📚 Game Collection")
-            st.caption(f"Showing Top {st.session_state['ai_limit']} games based on playtime.")
+            # Show caption below subheader or next to it? 
+            # Keeping it simple, maybe just update text dynamically
         
         with col_btn1:
             if st.session_state['ai_limit'] < 100:
-                if st.button("Analyze Top 100"):
+                # Shorter label to prevent wrapping
+                if st.button("Top 100", use_container_width=True):
                     st.session_state["ai_limit"] = 100
                     del st.session_state["games_data"]
                     st.rerun()
         
         with col_btn2:
              if st.session_state['ai_limit'] < len(df):
-                 if st.button("Analyze All"):
+                 # Shorter label
+                 if st.button("All", use_container_width=True):
                     st.session_state["ai_limit"] = len(df)
                     del st.session_state["games_data"]
                     st.rerun()
         
+        # Caption outside columns to avoid alignment issues
+        st.caption(f"Showing Top {st.session_state['ai_limit']} classified games.")
+
         current_limit = st.session_state["ai_limit"]
         st.dataframe(
             df.head(current_limit)[["name", "playtime_hours", "Genre", "Style", "Vibe"]],
