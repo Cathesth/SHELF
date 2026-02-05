@@ -35,15 +35,17 @@ env_steam_key = os.getenv("STEAM_API_KEY")
 env_gemini_key = os.getenv("GEMINI_API_KEY")
 
 if env_steam_key:
-    st.sidebar.success("✅ Steam API Key Loaded")
-    steam_api_key = env_steam_key
+    # Concise feedback
+    if env_gemini_key:
+         st.sidebar.caption("✅ Keys Loaded: Steam & Gemini")
+         steam_api_key = env_steam_key
+         gemini_api_key = env_gemini_key
+    else:
+         st.sidebar.caption("✅ Keys Loaded: Steam")
+         steam_api_key = env_steam_key
+         gemini_api_key = st.sidebar.text_input("Gemini API Key", type="password")
 else:
     steam_api_key = st.sidebar.text_input("Steam API Key", type="password")
-
-if env_gemini_key:
-    st.sidebar.success("✅ Gemini API Key Loaded")
-    gemini_api_key = env_gemini_key
-else:
     gemini_api_key = st.sidebar.text_input("Gemini API Key", type="password")
 
 refresh_btn = st.sidebar.button("🔄 Refresh Library")
@@ -181,13 +183,29 @@ if steam_id_input and steam_api_key:
             else:
                 st.info("Not enough data classified yet.")
         
-        # 3. Game Table with Load More
-        st.subheader("📚 Game Collection")
+        # 3. Game Table with integrated Toolbar
+        # Layout: Title on Left, Buttons on Right
+        col_header, col_btn1, col_btn2 = st.columns([3, 1, 1])
         
-        # Display current showing count
+        with col_header:
+            st.subheader("📚 Game Collection")
+            st.caption(f"Showing Top {st.session_state['ai_limit']} games based on playtime.")
+        
+        with col_btn1:
+            if st.session_state['ai_limit'] < 100:
+                if st.button("Analyze Top 100"):
+                    st.session_state["ai_limit"] = 100
+                    del st.session_state["games_data"]
+                    st.rerun()
+        
+        with col_btn2:
+             if st.session_state['ai_limit'] < len(df):
+                 if st.button("Analyze All"):
+                    st.session_state["ai_limit"] = len(df)
+                    del st.session_state["games_data"]
+                    st.rerun()
+        
         current_limit = st.session_state["ai_limit"]
-        st.caption(f"Showing Top {current_limit} games based on playtime.")
-        
         st.dataframe(
             df.head(current_limit)[["name", "playtime_hours", "Genre", "Style", "Vibe"]],
             column_config={
@@ -201,21 +219,6 @@ if steam_id_input and steam_api_key:
             use_container_width=True,
             height=400
         )
-        
-        # Load More Button
-        col_btn1, col_btn2 = st.columns([1, 4])
-        with col_btn1:
-            if current_limit < 100:
-                if st.button("Analyze Top 100 Games"):
-                    st.session_state["ai_limit"] = 100
-                    # Clear data to trigger re-fetch/re-analysis
-                    del st.session_state["games_data"]
-                    st.rerun()
-            elif current_limit < len(df):
-                 if st.button("Analyze All Games (Might appear slow)"):
-                    st.session_state["ai_limit"] = len(df)
-                    del st.session_state["games_data"]
-                    st.rerun()
         
         # 4. AI Recommendation Chat
         st.divider()
