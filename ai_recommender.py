@@ -2,6 +2,10 @@ import os
 import json
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import List
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 class SimpleMemory:
     def __init__(self):
@@ -23,6 +27,15 @@ class SimpleMemory:
         if output_text:
             from langchain_core.messages import AIMessage
             self.chat_history.append(AIMessage(content=output_text))
+
+class GameClassification(BaseModel):
+    game_name: str = Field(description="Name of the game")
+    genre: str = Field(description="Main genre of the game (e.g., RPG, FPS, Strategy, Puzzle)")
+    play_style: str = Field(description="Play style (e.g., Single-player, Multiplayer, Co-op)")
+    vibe: str = Field(description="Vibe or difficulty (e.g., Casual, Hardcore, Story-rich)")
+
+class GameList(BaseModel):
+    games: List[GameClassification]
 
 class AIRecommender:
     def __init__(self):
