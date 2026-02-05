@@ -5,7 +5,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import List
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 class SimpleMemory:
     def __init__(self):
